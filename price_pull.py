@@ -113,20 +113,18 @@ def queryPrices(symbs, cur, conn):
 
         try:
             qt = si.get_quote_table(ticker)
+            if qt is not None:
+                pushPrice(cur,  # cursor
+                          conn,  # connection
+                          int(new_sks[indx]),  # new price SK
+                          ticker,  # ticker symbol
+                          str(qt["Quote Price"]).replace(',',''),  # quote price
+                          str(qt["Ask"]).replace(',','').split(' ', 1)[0],  # ask price
+                          str(qt["Bid"]).replace(',','').split(' ', 1)[0],  # bid price
+                          qt["Volume"])  # cumulative day volume
 
         except:
             print("[error] Cannot pull quote table for %s." % ticker)
-
-        if qt is not None:
-            pushPrice(cur,  # cursor
-                      conn,  # connection
-                      int(new_sks[indx]),  # new price SK
-                      ticker,  # ticker symbol
-                      str(qt["Quote Price"]).replace(',',''),  # quote price
-                      str(qt["Ask"]).replace(',','').split(' ', 1)[0],  # ask price
-                      str(qt["Bid"]).replace(',','').split(' ', 1)[0],  # bid price
-                      qt["Volume"])  # cumulative day volume
-
 
 
 def main():
