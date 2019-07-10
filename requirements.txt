@@ -3,3 +3,4 @@ yahoo_fin
 datetime
 numpy
 requests
+pandas
