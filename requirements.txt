@@ -1,1 +1,7 @@
 psycopg2-binary
+yahoo_fin
+datetime
+numpy
+time
+sys
+os
