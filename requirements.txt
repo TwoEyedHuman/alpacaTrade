@@ -4,3 +4,4 @@ datetime
 numpy
 requests
 pandas
+requests_html
