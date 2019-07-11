@@ -138,6 +138,7 @@ def main():
     cur_time = dt.datetime.now().time()
     while True:
         if is_time_between(MARKET_OPEN, MARKET_CLOSE, dt.datetime.now().time()):
+            print("Markets are open.")
             queryPrices(symbs, cur, conn)
             time.sleep(CYCLE_WAIT_SEC)
                 
