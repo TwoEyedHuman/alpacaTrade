@@ -15,7 +15,7 @@ import os
 MARKET_OPEN = dt.time(9,30)
 MARKET_CLOSE = dt.time(16,00)
 CYCLE_WAIT_SEC = 60*5
-DATABASE_URL = os.environ['DATABASE_URL']
+DATABASE_URL = os.environ['HEROKU_POSTGRESQL_BLACK_URL']
 
 def getPriceSK(cur, conn, cnt=1):
     # pulls a new surrogate key for the price entry
