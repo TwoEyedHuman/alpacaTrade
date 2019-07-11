@@ -12,8 +12,8 @@ import time
 import sys
 import os
 
-MARKET_OPEN = dt.time(9,30)
-MARKET_CLOSE = dt.time(16,00)
+MARKET_OPEN = dt.time(14,30)
+MARKET_CLOSE = dt.time(21,00)
 CYCLE_WAIT_SEC = 60*5
 DATABASE_URL = os.environ['HEROKU_POSTGRESQL_BLACK_URL']
 
