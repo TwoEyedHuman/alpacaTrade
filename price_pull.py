@@ -17,6 +17,7 @@ MARKET_CLOSE = dt.time(21,00)
 CYCLE_WAIT_SEC = 60*5
 DATABASE_URL = os.environ['HEROKU_POSTGRESQL_BLACK_URL']
 
+
 def getPriceSK(cur, conn, cnt=1):
     # pulls a new surrogate key for the price entry
     # cur : cursor
@@ -129,6 +130,8 @@ def queryPrices(symbs, cur, conn):
 
 def main():
     cur, conn = connect()  # connect to the database
+
+    api = load_alpaca()
 
     symbs = loadTickers(sys.argv[1])
 
