@@ -53,6 +53,7 @@ if __name__ == "__main__":
     api = ppfx.load_alpaca()
     clock = api.get_clock()
 
+    cur, conn = ppfx.connect()
 
     # run program launch strategy
 
