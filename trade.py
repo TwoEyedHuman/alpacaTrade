@@ -1,4 +1,5 @@
 from price_pull_fx import update_prices, load_tickers
+import alpaca_trade_api as tradeapi
 import psycopg2 as psql
 from yahoo_fin import stock_info as si
 import psycopg2 as psql
@@ -47,6 +48,9 @@ if __name__ == "__main__":
     market_open_done = None
     market_end_done = None
     tick_syms = load_tickers("tick_sym.txt")
+    
+    api = load_alpaca()
+    clock = api.get_clock()
 
 
     # run program launch strategy
