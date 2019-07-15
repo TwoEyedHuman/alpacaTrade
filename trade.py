@@ -1,4 +1,5 @@
-from price_pull_fx import update_prices, load_tickers
+#from price_pull_fx import update_prices, load_tickers
+import price_pull_fx
 import alpaca_trade_api as tradeapi
 import psycopg2 as psql
 from yahoo_fin import stock_info as si
