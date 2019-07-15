@@ -1,3 +1,14 @@
+import price_pull_fx as ppfx
+import alpaca_trade_api as tradeapi
+import psycopg2 as psql
+from yahoo_fin import stock_info as si
+import psycopg2 as psql
+import datetime as dt
+import numpy as np
+import time
+import sys
+import os
+
 def load_alpaca():
     # load the connection to the alpaca web api
     api = tradeapi.REST(key_id =  os.environ['ALPACA_PUB_KEY'], secret_key =  os.environ['ALPACA_PRI_KEY'], base_url = "https://paper-api.alpaca.markets")
