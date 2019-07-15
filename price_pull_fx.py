@@ -1,3 +1,8 @@
+def load_alpaca():
+    # load the connection to the alpaca web api
+    api = tradeapi.REST(key_id =  os.environ['ALPACA_PUB_KEY'], secret_key =  os.environ['ALPACA_PRI_KEY'], base_url = "https://paper-api.alpaca.markets")
+    return api
+
 def load_tickers(fname):
     # loads ticker symbols from file
     # fname : filename containing ticker symbols
