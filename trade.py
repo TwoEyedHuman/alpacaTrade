@@ -1,5 +1,5 @@
 #from price_pull_fx import update_prices, load_tickers
-import price_pull_fx
+import price_pull_fx as ppfx
 import alpaca_trade_api as tradeapi
 import psycopg2 as psql
 from yahoo_fin import stock_info as si
@@ -48,9 +48,9 @@ def market_close_strats(api, cur, conn):
 if __name__ == "__main__":
     market_open_done = None
     market_end_done = None
-    tick_syms = load_tickers("tick_sym.txt")
+    tick_syms = ppfx.load_tickers("tick_sym.txt")
     
-    api = load_alpaca()
+    api = ppfx.load_alpaca()
     clock = api.get_clock()
 
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             market_middle_strats(api, cur, conn)
 
             # update database
-            update_prices(api, cur, conn, tick_syms)
+            ppfx.update_prices(api, cur, conn, tick_syms)
             
 
         if not clock.is_open and market_end_done != clock.timestamp.strftime("%Y-%m-%d"):
