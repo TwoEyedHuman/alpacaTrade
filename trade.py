@@ -58,6 +58,7 @@ if __name__ == "__main__":
     # run program launch strategy
 
     while True:
+        now = clock.timestamp
         if clock.is_open and market_open_done != clock.timestamp.strftime("%Y-%m-%d"):
             # run opening market strategy
             market_open_strats(api, cur, conn)
