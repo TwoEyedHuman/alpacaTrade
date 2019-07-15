@@ -9,6 +9,21 @@ import time
 import sys
 import os
 
+MARKET_OPEN = dt.time(14,30)
+MARKET_CLOSE = dt.time(21,00)
+CYCLE_WAIT_SEC = 60*5
+DATABASE_URL = os.environ['HEROKU_POSTGRESQL_BLACK_URL']
+
+def connect():
+    # connect to the database and build a cursor and connection
+
+    # build the connection and cursor objects
+    conn = psql.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()
+    
+    return cur, conn
+
+
 def load_alpaca():
     # load the connection to the alpaca web api
     api = tradeapi.REST(key_id =  os.environ['ALPACA_PUB_KEY'], secret_key =  os.environ['ALPACA_PRI_KEY'], base_url = "https://paper-api.alpaca.markets")
