@@ -77,7 +77,7 @@ if __name__ == "__main__":
             ppfx.update_prices(api, cur, conn, tick_syms)
             
 
-            time.sleep(60)
+            time.sleep(600)
 
         if not clock.is_open and market_end_done != clock.timestamp.strftime("%Y-%m-%d"):
             ppfx.print_msg(clock, "Running after market strategies")
