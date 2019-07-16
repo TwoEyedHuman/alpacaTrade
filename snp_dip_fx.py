@@ -10,6 +10,8 @@ import sys
 import os
 from price_pull_fx import connect, load_alpaca
 import pandas as pd
+import string
+import random
 
 def generate_order_id():
     # generate a random order ID
@@ -36,14 +38,14 @@ def get_prices(api, syms, days=50):
     # syms : set of symbols to consider
     # days : number of days back to calculate
 
-    now = dt.utcnow()
+    now = dt.datetime.utcnow()
     end_dt = now
 
     # if the market has already opened, get the most recent price today
     if now.time() >= dt.time(14,30):
         end_dt  = now - dt.timedelta(minutes=1)
 
-    start_dt = end_dt - dt.time_delta(days=days)
+    start_dt = end_dt - dt.timedelta(days=days)
 
     start = start_dt.strftime("%Y-%m-%d")
     end = end_dt.strftime("%Y-%m-%d")
@@ -91,27 +93,31 @@ def get_current_position(api, cur, conn):
 
     # build dataframe of positions currently held according to this strategy on DB
     with open("sql_stmts/active_snp_dip.sql", "r") as f:
-        logging.debug("Loading SQL statement activate_snp_dip.sql")
         sqlStr = f.read()
 
     cur.execute(sqlStr)
 
     db_pos = pd.DataFrame(cur.fetchall())
-    db_pos.columns = ["strat_sk", "stk", "qty"]
+    if len(db_pos.columns) == 3:
+        db_pos.columns = ["strat_sk", "stk", "qty"]
 
-    df = pd.merge(db_pos, api_pos, on="stk", how="inner", suffixes=("_db", "_api"))
+        df = pd.merge(db_pos, api_pos, on="stk", how="inner", suffixes=("_db", "_api"))
 
-    df["qty"] = df[["qty_db", "qty_api"]].min(axis=1)
+        df["qty"] = df[["qty_db", "qty_api"]].min(axis=1)
 
-    # deactivate all positions that do not exist anymore in alpaca
-    sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in (%s)" 
-    cur.execute(sqlStrParam, ",".join([str(x) for x in df["strat_sk"]]))
-    conn.commit()
+        # deactivate all positions that do not exist anymore in alpaca
+        sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in (%s)" 
+        cur.execute(sqlStrParam, ",".join([str(x) for x in df["strat_sk"]]))
+        conn.commit()
+        df["strat_sk"] = int(df["strat_sk"])
 
-    return df[["strat_sk", "stk", "qty"]]
+        return df[["strat_sk", "stk", "qty"]]
+
+    else:
+        return pd.DataFrame(columns=["strat_sk", "stk", "qty"])
 
 
-def update_positions(api, cur, conn, scores, position_size = 100, max_positions= 5):
+def update_positions(api, cur, conn, price_df, scores, position_size = 100, max_positions= 5):
     # update account holdings to reflect the current strategy
     # api : connection to the alpaca web api
     # cur : database cursor
@@ -136,18 +142,19 @@ def update_positions(api, cur, conn, scores, position_size = 100, max_positions=
     # for each position to sell, create an order-sell object and update DB to reflect the position closing
     for sym in to_sell:
         shares = holdings[holdings["stk"] == sym]["qty"]
-        orders.append({"symbol": sym, qty: shares, "side": "sell"})
+        orders.append({"symbol": sym, "qty": shares, "side": "sell"})
         sqlStrParam = "update snp_dip set active = false where strat_sk = %s"
-        cur.execute(sqlStrParam, holdings[holdings["sym"] == sym]["strat_sk"].values)
+        upd_sk = int(holdings[holdings["stk"] == sym]["strat_sk"].values[0])
+        cur.execute(sqlStrParam, str(upd_sk))
         conn.commit()
 
-    max_to_buy = max_positions - (len(positions) - len(to_sell))  # determine the number of positions to enter into
+    max_to_buy = max_positions - (len(holdings) - len(to_sell))  # determine the number of positions to enter into
 
     # for each position to buy, create an order-buy object
     for sym in to_buy:
         if max_to_buy <= 0:
             break
-        shares = position_size // float(price_df(sym).close.values[-1])
+        shares = position_size // float(price_df[sym].close.values[-1])
         if shares == 0:
             continue
         orders.append({"symbol": sym, "qty": shares, "side": "buy"})
@@ -156,20 +163,20 @@ def update_positions(api, cur, conn, scores, position_size = 100, max_positions=
     return orders
 
 
-def add_buy(stk, qty):
+def add_buy(cur, conn, stk, qty):
     # push to database the new buy action
 
     sqlStr = "select max(strat_sk) from snp_dip"
     cur.execute(sqlStr)
-    new_sk = cur.fetchone[0] + 1
+    new_sk = cur.fetchone()[0] + 1
 
     sqlStrParam = "insert into snp_dip (strat_sk, stk, qty) values (%s, %s, %s)"
-    cur.execute(sqlStrParam, new_sk, stk, qty)
+    cur.execute(sqlStrParam, (new_sk, stk, qty))
 
     conn.commit()
 
 
-def process_orders(api, orders, wait=30):
+def process_orders(api, cur, conn, orders, wait=30):
     # proces the orders built, waiting between sellign and buying
     # api : connection to alpaca web api
     # orders : set of orders to submit
@@ -182,7 +189,7 @@ def process_orders(api, orders, wait=30):
             order_id = generate_order_id()
             api.submit_order(symbol = order["symbol"], qty = order["qty"], side = "sell", type = "market", time_in_force = "day", client_order_id = order_id)
         except Exception as e:
-            print(e)
+            print("Error in process orders: %s" % e)
 
     count = wait
 
@@ -199,9 +206,10 @@ def process_orders(api, orders, wait=30):
         try:
             order_id = generate_order_id()
             api.submit_order(symbol = order["symbol"], qty = order["qty"], side = "buy", type = "market", time_in_force = "day", client_order_id = order_id)
-            add_buy(order["symbol"], order["qty"])
+            add_buy(cur, conn, order["symbol"], order["qty"])
         except Exception as e:
-            print(e)
+            print("Error in process orders: %s" % e)
+            print(traceback.format_exc())
 
     count = wait
     while count > 0:
@@ -228,7 +236,7 @@ def snp_dip_strat(api, cur, conn):
     scores = calc_scores(api, price_df)
 
     # build buy and sell conditions based on current position
-    update_positions(api, cur, conn, scores)
+    orders = update_positions(api, cur, conn, price_df, scores)
 
     # submit orders
-    process_orders(api, orders, 30)
+    process_orders(api, cur, conn, orders, 30)

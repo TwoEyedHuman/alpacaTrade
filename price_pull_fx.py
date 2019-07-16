@@ -8,6 +8,8 @@ import numpy as np
 import time
 import sys
 import os
+import string
+import random
 
 MARKET_OPEN = dt.time(14,30)
 MARKET_CLOSE = dt.time(21,00)
@@ -72,9 +74,9 @@ def update_prices(api, cur, conn, symbs):
 
     # pull in price information
     barset = None
-    barset = api.get_barset(symbs[0:200], 'minute', limit=1)
-    for indx in range(1,int(len(symbs)/200)+1):
-        sub_symbs = symbs[indx:indx*200]
+    barset = api.get_barset(symbs[0:100], 'minute', limit=1)
+    for indx in range(1,int(len(symbs)/100)+1):
+        sub_symbs = symbs[indx*100:indx*100+100]
         barset.update(api.get_barset(sub_symbs, 'minute', limit=1))
 
     sqlStrParam = "insert into prices (price_sk, symb, ts, open, high, low, close, vol) values (%s, %s, CURRENT_TIMESTAMP, %s, %s, %s, %s, %s)"
@@ -82,9 +84,10 @@ def update_prices(api, cur, conn, symbs):
     
     # for each symbol, push price info to database
     for indx, sym in enumerate(barset):
-        cur.execute(sqlStrParam, new_sks[indx], sym, barset[sym][0].o, barset[sym][0].h, barset[sym][0].l, barset[sym][0].c, barset[sym][0].v)  # push row to database
+        new_sk = int(new_sks[indx])
+        cur.execute(sqlStrParam, (new_sk, sym, barset[sym][0].o, barset[sym][0].h, barset[sym][0].l, barset[sym][0].c, barset[sym][0].v))  # push row to database
 
-    cur.commit()  # save changes to database
+    conn.commit()  # save changes to database
 
 
 def print_msg(clock, msg):
