@@ -14,6 +14,7 @@ MARKET_CLOSE = dt.time(21,00)
 CYCLE_WAIT_SEC = 60*5
 DATABASE_URL = os.environ['HEROKU_POSTGRESQL_BLACK_URL']
 
+
 def connect():
     # connect to the database and build a cursor and connection
 
@@ -28,6 +29,7 @@ def load_alpaca():
     # load the connection to the alpaca web api
     api = tradeapi.REST(key_id =  os.environ['ALPACA_PUB_KEY'], secret_key =  os.environ['ALPACA_PRI_KEY'], base_url = "https://paper-api.alpaca.markets")
     return api
+
 
 def load_tickers(fname):
     # loads ticker symbols from file
@@ -71,7 +73,7 @@ def update_prices(api, cur, conn, symbs):
     # pull in price information
     barset = None
     barset = api.get_barset(symbs[0:200], 'minute', limit=1)
-    for indx in range(1,len(symbs)/200+1):
+    for indx in range(1,int(len(symbs)/200)+1):
         sub_symbs = symbs[indx:indx*200]
         barset.update(api.get_barset(sub_symbs, 'minute', limit=1))
 
@@ -83,3 +85,8 @@ def update_prices(api, cur, conn, symbs):
         cur.execute(sqlStrParam, new_sks[indx], sym, barset[sym][0].o, barset[sym][0].h, barset[sym][0].l, barset[sym][0].c, barset[sym][0].v)  # push row to database
 
     cur.commit()  # save changes to database
+
+
+def print_msg(clock, msg):
+    print("[Server: %s] [Market: %s] %s" % (dt.datetime.now().strftime("%Y%m%d %H:%M:%S"), clock.timestamp.strftime("%Y%m%d %H:%M:%S"), msg))
+

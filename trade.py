@@ -9,6 +9,7 @@ import numpy as np
 import time
 import sys
 import os
+import snp_dip_fx as sd
 
 
 ############################ CONSTANTS ############################
@@ -24,7 +25,7 @@ def market_open_strats(api, cur, conn):
     # cur : database cursor
     # conn : database connection
 
-    pass
+    sd.snp_dip_strat(api, cur, conn)
 
 
 def market_middle_strats(api, cur, conn):
@@ -60,20 +61,24 @@ if __name__ == "__main__":
     while True:
         now = clock.timestamp
         if clock.is_open and market_open_done != clock.timestamp.strftime("%Y-%m-%d"):
+            ppfx.print_msg(clock, "Running market open strategies.")
             # run opening market strategy
             market_open_strats(api, cur, conn)
 
             market_open_done = now.strftime('%Y-%m-%d')
 
         while clock.is_open and market_open_done == clock.timestamp.strftime("%Y-%m-%d"):
+            ppfx.print_msg(clock, "Running middle of market day strategies.")
             # run middle of market strategy
             market_middle_strats(api, cur, conn)
 
+            ppfx.print_msg(clock, "Updating prices in database.")
             # update database
             ppfx.update_prices(api, cur, conn, tick_syms)
             
 
         if not clock.is_open and market_end_done != clock.timestamp.strftime("%Y-%m-%d"):
+            ppfx.print_msg(clock, "Running after market strategies")
             # run outside of market strategy
             market_close_strats(api, cur, conn)
-            market_close_done = now.strftime("%Y-%m-%d")
+            market_end_done = now.strftime("%Y-%m-%d")
