@@ -211,7 +211,7 @@ def process_orders(api, orders, wait=30):
         count -= 1
     
 
-def snp_drip_strat(api, cur, conn):
+def snp_dip_strat(api, cur, conn):
     # execute snp drop strategy
 
 
