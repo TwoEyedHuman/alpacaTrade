@@ -9,6 +9,7 @@ import time
 import sys
 import os
 from price_pull_fx import connect, load_alpaca
+import pandas as pd
 
 def generate_order_id():
     # generate a random order ID
