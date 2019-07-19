@@ -170,7 +170,7 @@ def add_buy(cur, conn, stk, qty):
     cur.execute(sqlStr)
     new_sk = cur.fetchone()[0] + 1
 
-    sqlStrParam = "insert into snp_dip (strat_sk, stk, qty) values (%s, %s, %s)"
+    sqlStrParam = "insert into snp_dip (strat_sk, stk, qty, active) values (%s, %s, %s, TRUE)"
     cur.execute(sqlStrParam, (new_sk, stk, qty))
 
     conn.commit()

@@ -48,6 +48,7 @@ def market_close_strats(api, cur, conn):
 
 if __name__ == "__main__":
     market_open_done = None
+    market_mid_msg_done = None
     market_end_done = None
     tick_syms = ppfx.load_tickers("tick_sym.txt")
     
@@ -68,11 +69,13 @@ if __name__ == "__main__":
             market_open_done = now.strftime('%Y-%m-%d')
 
         while clock.is_open and market_open_done == clock.timestamp.strftime("%Y-%m-%d"):
-            ppfx.print_msg(clock, "Running middle of market day strategies.")
+            if market_mid_msg_done != clock.timestamp.strftime("%Y-%m%-d"):
+                ppfx.print_msg(clock, "Run mid market strategies and updating prices.")
+                market_mid_msg_done = now.strftime("%Y-%m-%d")
+
             # run middle of market strategy
             market_middle_strats(api, cur, conn)
 
-            ppfx.print_msg(clock, "Updating prices in database.")
             # update database
             ppfx.update_prices(api, cur, conn, tick_syms)
             
