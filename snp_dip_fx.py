@@ -105,6 +105,8 @@ def get_current_position(api, cur, conn):
 
         df["qty"] = df[["qty_db", "qty_api"]].min(axis=1)
 
+        ord_id = generate_order_id()
+
         # deactivate all positions that do not exist anymore in alpaca
         sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in (%s)" 
         cur.execute(sqlStrParam, ",".join([str(x) for x in df["strat_sk"]]))
@@ -170,14 +172,16 @@ def add_buy(cur, conn, stk, qty):
     cur.execute(sqlStr)
     new_sk = cur.fetchone()[0] + 1
 
-    sqlStrParam = "insert into snp_dip (strat_sk, stk, qty, active) values (%s, %s, %s, TRUE)"
-    cur.execute(sqlStrParam, (new_sk, stk, qty))
+    ord_id = generate_order_id()
+
+    sqlStrParam = "insert into snp_dip (strat_sk, stk, enter_date, enter_order_id, qty, active) values (%s, %s, CURRENT_TIMESTAMP, %s, %s, TRUE)"
+    cur.execute(sqlStrParam, (new_sk, stk, ord_id, qty))
 
     conn.commit()
 
 
 def process_orders(api, cur, conn, orders, wait=30):
-    # proces the orders built, waiting between sellign and buying
+    # process the orders built, waiting between selling and buying
     # api : connection to alpaca web api
     # orders : set of orders to submit
     # wait : maximum time to wait between selling and buying
