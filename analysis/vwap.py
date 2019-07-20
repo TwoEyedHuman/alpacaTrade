@@ -38,17 +38,34 @@ if __name__ == "__main__":
     symb = sys.argv[1]
     api = load_alpaca()
 
-    barset = api.get_barset(symb, "day", limit=150)
+    barset = api.get_barset(symb, "minute", limit=275)
 
     df = barset.df[symb]
     df.volume = (df.volume - df.volume.min())/(df.volume.max() - df.volume.min())
     df.volume = 16 * df.volume
     df["ewma"] = df.ewm(com=0.95).mean().close
 
+    df["wave"] = np.nan
+    df["wave"][75:df.shape[0]] = [wave_overlay(df.close[i:i+75], 5)[-1] for i in range(df.shape[0]-75)]
+
+    df["action"] = 0
+    df["profit"] = 0.0
+    cur_pos = (None, None)
+    for indx, row in df.iterrows():
+        if cur_pos[0] == None and row.close < row.wave:
+            df.loc[df.index == indx, "action"] = 1
+            cur_pos = ("long", row.close)
+        elif cur_pos[0] == "long" and (row.close > row.wave or row.close < cur_pos[1]*0.999):
+            df.loc[df.index == indx, "action"] = -1
+            df.loc[df.index == indx, "profit"] = row.close - cur_pos[1]
+            cur_pos = (None, None)
+
+    df.to_csv(symb + ".csv")
+
 
     pd.plotting.register_matplotlib_converters()
 
-    plt.plot(df.index, wave_overlay(df.close, 30))
-    plt.scatter(df.index, df.close, s = df.volume)
+    plt.plot(df.index[75:df.shape[0]], [wave_overlay(df.close[i:i+75], 5)[-1] for i in range(df.shape[0]-75)])
+    plt.scatter(df.index, df.close, c=df.action)
     plt.xlim(df.index.min(), df.index.max())
     plt.show()
