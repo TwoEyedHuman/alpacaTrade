@@ -1,4 +1,3 @@
-#from price_pull_fx import update_prices, load_tickers
 import price_pull_fx as ppfx
 import alpaca_trade_api as tradeapi
 import psycopg2 as psql
@@ -47,20 +46,25 @@ def market_close_strats(api, cur, conn):
 
 
 if __name__ == "__main__":
+    # create indicators to indicate if a strategy was already run "today"
     market_open_done = None
     market_mid_msg_done = None
     market_end_done = None
+
+    # load the universe of tickers
     tick_syms = ppfx.load_tickers("tick_sym.txt")
     
-    api = ppfx.load_alpaca()
-    clock = api.get_clock()
+    api = ppfx.load_alpaca()  # connect to the alpaca API
+    clock = api.get_clock()  # build a market clock
 
-    cur, conn = ppfx.connect()
+    cur, conn = ppfx.connect()  # connect to the database
 
     # run program launch strategy
 
-    while True:
+    while True:  # continuously run until end or server error
         now = clock.timestamp
+
+        # run strategies that start or are triggered when the market opens
         if clock.is_open and market_open_done != clock.timestamp.strftime("%Y-%m-%d"):
             ppfx.print_msg(clock, "Running market open strategies.")
             # run opening market strategy
@@ -68,6 +72,7 @@ if __name__ == "__main__":
 
             market_open_done = now.strftime('%Y-%m-%d')
 
+        # continuously run strategies that will run while the market is open
         while clock.is_open and market_open_done == clock.timestamp.strftime("%Y-%m-%d"):
             if market_mid_msg_done != clock.timestamp.strftime("%Y-%m%-d"):
                 ppfx.print_msg(clock, "Run mid market strategies and updating prices.")
@@ -80,8 +85,9 @@ if __name__ == "__main__":
             ppfx.update_prices(api, cur, conn, tick_syms)
             
 
-            time.sleep(600)
+            time.sleep(600)  # wait to avoid access revoked from API
 
+        # run stategies that trigger after the market closes
         if not clock.is_open and market_end_done != clock.timestamp.strftime("%Y-%m-%d"):
             ppfx.print_msg(clock, "Running after market strategies")
             # run outside of market strategy
