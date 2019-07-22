@@ -109,7 +109,8 @@ def get_current_position(api, cur, conn):
 
         # deactivate all positions that do not exist anymore in alpaca
         if not df.empty:
-            sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in %s" 
+            sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in %s"
+            cur.mogrify(sqlStrParam, tuple([str(x) for x in df["strat_sk"]]))
             cur.execute(sqlStrParam, ([str(x) for x in df["strat_sk"]]))
             conn.commit()
         df["strat_sk"] = int(df["strat_sk"])
