@@ -108,7 +108,7 @@ def get_current_position(api, cur, conn):
         ord_id = generate_order_id()
 
         # deactivate all positions that do not exist anymore in alpaca
-        if not.df.empty:
+        if not df.empty:
             sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in (%s)" 
             cur.execute(sqlStrParam, ",".join([str(x) for x in df["strat_sk"]]))
             conn.commit()
