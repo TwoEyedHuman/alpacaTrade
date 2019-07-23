@@ -38,7 +38,7 @@ if __name__ == "__main__":
     symb = sys.argv[1]
     api = load_alpaca()
 
-    barset = api.get_barset(symb, "minute", limit=275)
+    barset = api.get_barset(symb, "minute", limit=200)
 
     df = barset.df[symb]
     df.volume = (df.volume - df.volume.min())/(df.volume.max() - df.volume.min())
@@ -66,6 +66,7 @@ if __name__ == "__main__":
     pd.plotting.register_matplotlib_converters()
 
     plt.plot(df.index[75:df.shape[0]], [wave_overlay(df.close[i:i+75], 5)[-1] for i in range(df.shape[0]-75)])
+    plt.plot(df.index, wave_overlay(df.close, 5))
     plt.scatter(df.index, df.close, c=df.action)
     plt.xlim(df.index.min(), df.index.max())
     plt.show()

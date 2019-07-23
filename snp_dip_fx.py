@@ -110,10 +110,9 @@ def get_current_position(api, cur, conn):
         # deactivate all positions that do not exist anymore in alpaca
         if not df.empty:
             sqlStrParam = "update snp_dip set active = false, exit_date = CURRENT_TIMESTAMP where strat_sk not in %s"
-            cur.mogrify(sqlStrParam, tuple([str(x) for x in df["strat_sk"]]))
-            cur.execute(sqlStrParam, ([str(x) for x in df["strat_sk"]]))
+            cur.execute(sqlStrParam, (tuple([str(x) for x in df.strat_sk.values]),))
             conn.commit()
-        df["strat_sk"] = int(df["strat_sk"])
+#        df["strat_sk"] = int(df["strat_sk"])
 
         return df[["strat_sk", "stk", "qty"]]
 
@@ -121,7 +120,7 @@ def get_current_position(api, cur, conn):
         return pd.DataFrame(columns=["strat_sk", "stk", "qty"])
 
 
-def update_positions(api, cur, conn, price_df, scores, position_size = 100, max_positions= 5):
+def update_positions(api, cur, conn, price_df, scores, position_size = 100, max_positions= 25):
     # update account holdings to reflect the current strategy
     # api : connection to the alpaca web api
     # cur : database cursor
@@ -137,6 +136,7 @@ def update_positions(api, cur, conn, price_df, scores, position_size = 100, max_
 
     # create set of the best stocks to buy (top twentieth)
     to_buy = set([sym for sym, _ in scores[:len(scores)//20]])
+
     to_sell = holdings_syms - to_buy   # exit out of positions that we currently hold but do not want
     to_buy = to_buy - holdings_syms  # buy positions that we do not currently hold
 
@@ -148,8 +148,8 @@ def update_positions(api, cur, conn, price_df, scores, position_size = 100, max_
         shares = holdings[holdings["stk"] == sym]["qty"]
         orders.append({"symbol": sym, "qty": shares, "side": "sell"})
         sqlStrParam = "update snp_dip set active = false where strat_sk = %s"
-        upd_sk = int(holdings[holdings["stk"] == sym]["strat_sk"].values[0])
-        cur.execute(sqlStrParam, str(upd_sk))
+        upd_sk = holdings[holdings["stk"] == sym]["strat_sk"].values[0]
+        cur.execute(sqlStrParam, (int(upd_sk),))
         conn.commit()
 
     max_to_buy = max_positions - (len(holdings) - len(to_sell))  # determine the number of positions to enter into
@@ -195,7 +195,7 @@ def process_orders(api, cur, conn, orders, wait=30):
             order_id = generate_order_id()
             api.submit_order(symbol = order["symbol"], qty = order["qty"], side = "sell", type = "market", time_in_force = "day", client_order_id = order_id)
         except Exception as e:
-            print("Error in process orders: %s" % e)
+            print("[198] Error in process orders: %s" % e)
 
     count = wait
 
@@ -214,7 +214,7 @@ def process_orders(api, cur, conn, orders, wait=30):
             api.submit_order(symbol = order["symbol"], qty = order["qty"], side = "buy", type = "market", time_in_force = "day", client_order_id = order_id)
             add_buy(cur, conn, order["symbol"], order["qty"])
         except Exception as e:
-            print("Error in process orders: %s" % e)
+            print("[217] Error in process orders: %s" % e)
             print(traceback.format_exc())
 
     count = wait
@@ -244,5 +244,6 @@ def snp_dip_strat(api, cur, conn):
     # build buy and sell conditions based on current position
     orders = update_positions(api, cur, conn, price_df, scores)
 
+    print(orders)
     # submit orders
     process_orders(api, cur, conn, orders, 30)
