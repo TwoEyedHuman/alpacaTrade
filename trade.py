@@ -9,6 +9,7 @@ import time
 import sys
 import os
 import snp_dip_fx as sd
+import std_dev_fx as std
 
 
 ############################ CONSTANTS ############################
@@ -33,7 +34,7 @@ def market_middle_strats(api, cur, conn):
     # cur : database cursor
     # conn : database connection
 
-    pass
+    std.std_def_strat(api, cur, conn)
 
 
 def market_close_strats(api, cur, conn):
@@ -62,7 +63,6 @@ if __name__ == "__main__":
     # run program launch strategy
 
     while True:  # continuously run until end or server error
-        now = clock.timestamp
 
         # run strategies that start or are triggered when the market opens
         if clock.is_open and market_open_done != clock.timestamp.strftime("%Y-%m-%d"):
@@ -70,13 +70,13 @@ if __name__ == "__main__":
             # run opening market strategy
             market_open_strats(api, cur, conn)
 
-            market_open_done = now.strftime('%Y-%m-%d')
+            market_open_done = clock.timestamp.strftime('%Y-%m-%d')
 
         # continuously run strategies that will run while the market is open
         while clock.is_open and market_open_done == clock.timestamp.strftime("%Y-%m-%d"):
             if market_mid_msg_done != clock.timestamp.strftime("%Y-%m%-d"):
                 ppfx.print_msg(clock, "Run mid market strategies and updating prices.")
-                market_mid_msg_done = now.strftime("%Y-%m-%d")
+                market_mid_msg_done = clock.timestamp.strftime("%Y-%m-%d")
 
             # run middle of market strategy
             market_middle_strats(api, cur, conn)
@@ -92,4 +92,4 @@ if __name__ == "__main__":
             ppfx.print_msg(clock, "Running after market strategies")
             # run outside of market strategy
             market_close_strats(api, cur, conn)
-            market_end_done = now.strftime("%Y-%m-%d")
+            market_end_done = clock.timestamp.strftime("%Y-%m-%d")
